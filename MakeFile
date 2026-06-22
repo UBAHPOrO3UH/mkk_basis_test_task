@@ -1,0 +1,13 @@
+#include .env
+.PHONY: build clean run test docs swagger
+
+BINARY_NAME=myTestProject
+run:
+	go run cmd/rest-api/main.go
+docs: swagger
+
+swagger:
+	@echo "Generating Swagger docs..."
+	@swag fmt
+	@swag init -g ./cmd/rest-api/main.go -o ./api/docs --parseInternal --parseDependency --parseDepth 5
+	@echo "Swagger docs generated in ./api/docs"
