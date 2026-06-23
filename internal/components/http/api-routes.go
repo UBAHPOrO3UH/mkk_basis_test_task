@@ -3,6 +3,7 @@ package http
 import (
 	"mkk_basis/rest_api/api/docs"
 	auth_router "mkk_basis/rest_api/internal/app/core/transport/rest/auth-router"
+	tasks_router "mkk_basis/rest_api/internal/app/core/transport/rest/tasks-router"
 	teams_router "mkk_basis/rest_api/internal/app/core/transport/rest/teams-router"
 	users_router "mkk_basis/rest_api/internal/app/core/transport/rest/users-router"
 	"net/http"
@@ -81,4 +82,5 @@ func AddApiRoutes(router *gin.Engine) {
 	auth_router.AddRoutes(api)
 	users_router.AddRoutes(api)
 	teams_router.AddRoutes(api)
+	tasks_router.AddRoutes(api)
 }
