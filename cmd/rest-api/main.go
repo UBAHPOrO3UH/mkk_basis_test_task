@@ -42,7 +42,7 @@ func Run(ctx context.Context, errSet *components.ErrSet) error {
 }
 
 // @Version	1.0
-// @Title		Protei ORM API
+// @Title		rest-API
 func main() {
 	ctx := internalComponents.AwaitSignal(context.Background())
 

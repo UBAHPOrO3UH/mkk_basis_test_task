@@ -1,6 +1,8 @@
 package http
 
 import (
+	"mkk_basis/rest_api/api/docs"
+	users_router "mkk_basis/rest_api/internal/app/core/transport/rest/users-router"
 	"net/http"
 	"time"
 
@@ -9,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
 	"go.uber.org/zap"
 )
 
@@ -55,9 +56,9 @@ func GetRoutes() *gin.Engine {
 	// API routes
 	AddApiRoutes(router)
 	router.Group("swagger").
-		GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler), func(c *gin.Context) {
+		GET("/*any", func(c *gin.Context) {
 			docs.SwaggerInfo.Host = c.Request.Host
-		})
+		}, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 404 handler
 	router.NoRoute(func(c *gin.Context) {
@@ -74,5 +75,6 @@ func GetRoutes() *gin.Engine {
 // AddApiRoutes adds all API routes to the router
 func AddApiRoutes(router *gin.Engine) {
 
-	_ = router.Group("/api/v1")
+	api := router.Group("/api/v1")
+	users_router.AddRoutes(api)
 }

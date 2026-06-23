@@ -1,4 +1,241 @@
+definitions:
+  mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  mkk_basis_rest_api_internal_common.APIResponse:
+    properties:
+      err:
+        type: string
+      result: {}
+    type: object
 info:
   contact: {}
-paths: {}
+  title: rest-API
+  version: "1.0"
+paths:
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Получить список пользователей без фильтра
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+                  type: array
+              type: object
+      summary: Get users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Создание пользователя
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+              type: object
+      summary: Create user
+      tags:
+      - users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить пользователя по ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  format: int64
+                  type: integer
+              type: object
+      summary: Delete user by id
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Получить пользователя по ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+              type: object
+      summary: Get user by id
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Обновление пользователя
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+              type: object
+      summary: Update user
+      tags:
+      - users
+  /api/v1/users/by-email:
+    get:
+      consumes:
+      - application/json
+      description: Получить пользователя по email
+      parameters:
+      - description: User email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+              type: object
+      summary: Get user by email
+      tags:
+      - users
+  /api/v1/users/filter:
+    get:
+      consumes:
+      - application/json
+      description: Получить список пользователей с фильтрацией и пагинацией
+      parameters:
+      - in: query
+        maxLength: 255
+        name: email
+        type: string
+      - in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - in: query
+        maxLength: 255
+        name: name
+        type: string
+      - in: query
+        minimum: 0
+        name: shift
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse'
+                  type: array
+              type: object
+      summary: Get users with filter
+      tags:
+      - users
 swagger: "2.0"

@@ -1,6 +1,8 @@
 #include .env
 .PHONY: build clean run test docs swagger
 
+SWAG_VERSION=v1.16.6
+
 BINARY_NAME=myTestProject
 run:
 	go run cmd/rest-api/main.go
