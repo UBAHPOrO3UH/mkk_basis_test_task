@@ -39,6 +39,54 @@ definitions:
     - password
     - username
     type: object
+  mkk_basis_rest_api_internal_app_core_entities_teams-entities.CreateTeamRequest:
+    properties:
+      name:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    type: object
+  mkk_basis_rest_api_internal_app_core_entities_teams-entities.InviteUserRequest:
+    properties:
+      role:
+        enum:
+        - admin
+        - member
+        type: string
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamMemberResponse:
+    properties:
+      joined_at:
+        type: string
+      role:
+        type: string
+      team_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      id:
+        type: integer
+      joined_at:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
   mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest:
     properties:
       name:
@@ -144,6 +192,116 @@ paths:
       summary: Register
       tags:
       - auth
+  /api/v1/teams:
+    get:
+      description: Получить команды, в которых состоит текущий пользователь
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+      summary: Get user's teams
+      tags:
+      - teams
+    post:
+      consumes:
+      - application/json
+      description: Создать команду; текущий пользователь становится owner
+      parameters:
+      - description: Team data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+      summary: Create team
+      tags:
+      - teams
+  /api/v1/teams/{id}/invite:
+    post:
+      consumes:
+      - application/json
+      description: Добавить пользователя в команду; доступно owner и admin
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Invitation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.InviteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamMemberResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/mkk_basis_rest_api_internal_common.APIResponse'
+      summary: Invite user to team
+      tags:
+      - teams
   /api/v1/users:
     get:
       consumes:
