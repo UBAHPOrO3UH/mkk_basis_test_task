@@ -6,6 +6,7 @@ import (
 	users_filter "mkk_basis/rest_api/internal/app/core/entities/users-filter"
 	users_handler "mkk_basis/rest_api/internal/app/core/handlers/rest/users-handler"
 	"mkk_basis/rest_api/internal/common"
+	auth_middleware "mkk_basis/rest_api/internal/components/http/middlewares"
 	"net/http"
 	"strconv"
 
@@ -14,11 +15,12 @@ import (
 
 func AddRoutes(r *gin.RouterGroup) {
 	router := r.Group("/users")
+	router.Use(auth_middleware.AuthMiddleware())
 	{
 		router.POST("", createUserRoute)
 		router.GET("", getUsersRoute)
 		router.GET("/filter", getUsersFilterRoute)
-		router.GET("/by-email", getUserByEmailRoute)
+		router.GET("/by-username", getUserByUsernameRoute)
 
 		router.GET("/:id", getUserRoute)
 		router.PUT("/:id", updateUserRoute)
@@ -161,25 +163,25 @@ func getUserRoute(c *gin.Context) {
 	c.JSON(http.StatusOK, common.ResultResponseNoErr(user))
 }
 
-// Get user by email
+// Get user by username
 //
-//	@Summary		Get user by email
-//	@Description	Получить пользователя по email
+//	@Summary		Get user by username
+//	@Description	Получить пользователя по username
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
-//	@Param			email	query		string	true	"User email"
-//	@Success		200		{object}	common.APIResponse{result=users_entities.UserResponse}
-//	@Router			/api/v1/users/by-email [get]
-func getUserByEmailRoute(c *gin.Context) {
-	email := c.Query("email")
-	if email == "" {
-		err := errors.New("email is required")
+//	@Param			username	query		string	true	"User username"
+//	@Success		200			{object}	common.APIResponse{result=users_entities.UserResponse}
+//	@Router			/api/v1/users/by-username [get]
+func getUserByUsernameRoute(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		err := errors.New("username is required")
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
 	}
 
-	user, err := users_handler.GetUserByEmail(c.Request.Context(), email)
+	user, err := users_handler.GetUserByUsername(c.Request.Context(), username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return

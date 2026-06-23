@@ -6,14 +6,14 @@ import (
 )
 
 type UserRequest struct {
-	Email    string `json:"email" binding:"required,email,max=255"`
-	Password string `json:"password" binding:"required,min=8,max=72"`
-	Name     string `json:"name" binding:"required,min=2,max=255"`
+	Username string `json:"username" binding:"required,max=255"`
+	Password string `json:"password" binding:"required,max=255"`
+	Name     string `json:"name" binding:"required,max=255"`
 }
 
 func (u *UserRequest) ToModel(passwordHash string) *users.UserModel {
 	return &users.UserModel{
-		Email:        u.Email,
+		Username:     u.Username,
 		Name:         u.Name,
 		PasswordHash: passwordHash,
 	}
@@ -21,7 +21,7 @@ func (u *UserRequest) ToModel(passwordHash string) *users.UserModel {
 
 type UserResponse struct {
 	ID        uint64    `json:"id"`
-	Email     string    `json:"email"`
+	Username  string    `json:"username"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -33,7 +33,7 @@ func FromModelResponse(m *users.UserModel) *UserResponse {
 	}
 	return &UserResponse{
 		ID:        m.ID,
-		Email:     m.Email,
+		Username:  m.Username,
 		Name:      m.Name,
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,

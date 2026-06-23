@@ -39,6 +39,7 @@ type AppConfig struct {
 	Server   *ServerConfig
 	AppInfo  *AppInfoConfig
 	Database *DataBaseConfig
+	Auth     *AuthConfig
 }
 
 type AppInfoConfig struct {
@@ -65,6 +66,15 @@ type DataBaseConfig struct {
 	ConnMaxIdleTimeMinutes int    `env:"DB_CONN_MAX_IDLE_TIME_MINUTES" json:"-"`
 }
 
+type AuthConfig struct {
+	JWTSecret             string `env:"JWT_SECRET"               json:"-"`
+	JWTIssuer             string `env:"JWT_ISSUER"               json:"jwt_issuer"`
+	AccessTokenTTLMinutes int    `env:"ACCESS_TOKEN_TTL_MINUTES" json:"access_token_ttl_minutes"`
+	RefreshTokenTTLHours  int    `env:"REFRESH_TOKEN_TTL_HOURS"  json:"refresh_token_ttl_hours"`
+	CookieSecure          bool   `env:"AUTH_COOKIE_SECURE"       json:"cookie_secure"`
+	CookieDomain          string `env:"AUTH_COOKIE_DOMAIN"       json:"cookie_domain"`
+}
+
 var CurrentConfig = &AppConfig{
 	Server: &ServerConfig{
 		HttpProtocol: "http",
@@ -87,6 +97,33 @@ var CurrentConfig = &AppConfig{
 		ConnMaxLifetimeMinutes: 30,
 		ConnMaxIdleTimeMinutes: 5,
 	},
+	Auth: &AuthConfig{
+		JWTIssuer:             "mkk-basis-rest-api",
+		JWTSecret:             "test",
+		AccessTokenTTLMinutes: 15,
+		RefreshTokenTTLHours:  24 * 7,
+		CookieSecure:          false,
+	},
+}
+
+func (c *AuthConfig) Validate() error {
+	if c == nil {
+		return errors.New("auth config is required")
+	}
+	if len(c.JWTSecret) < 32 {
+		return errors.New("JWT_SECRET must contain at least 32 characters")
+	}
+	if strings.TrimSpace(c.JWTIssuer) == "" {
+		return errors.New("JWT_ISSUER must not be empty")
+	}
+	if c.AccessTokenTTLMinutes <= 0 {
+		return errors.New("ACCESS_TOKEN_TTL_MINUTES must be greater than zero")
+	}
+	if c.RefreshTokenTTLHours <= 0 {
+		return errors.New("REFRESH_TOKEN_TTL_HOURS must be greater than zero")
+	}
+
+	return nil
 }
 
 func ReloadConfig() {

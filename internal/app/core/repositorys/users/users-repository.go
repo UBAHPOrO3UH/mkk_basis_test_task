@@ -12,7 +12,7 @@ import (
 
 type UserModel struct {
 	ID           uint64    `gorm:"column:id;primaryKey"`
-	Email        string    `gorm:"column:email;not null"`
+	Username     string    `gorm:"column:username;not null"`
 	PasswordHash string    `gorm:"column:password_hash;not null"`
 	Name         string    `gorm:"column:name;not null"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
@@ -34,7 +34,7 @@ type UserRepository interface {
 	Delete(id uint64, dbConn *gorm.DB) (*uint64, error)
 
 	FindByID(id uint64, dbConn *gorm.DB) (*UserModel, error)
-	FindByEmail(email string, dbConn *gorm.DB) (*UserModel, error)
+	FindByUsername(username string, dbConn *gorm.DB) (*UserModel, error)
 	FindAll(dbConn *gorm.DB) ([]*UserModel, error)
 	FindAllWithFilter(params *users_entities.UserFilterRequest, dbConn *gorm.DB) (*FoundUsers, error)
 }
@@ -105,11 +105,11 @@ func (r *UserRepositoryImpl) FindByID(id uint64, dbConn *gorm.DB) (*UserModel, e
 	return &model, nil
 }
 
-func (r *UserRepositoryImpl) FindByEmail(email string, dbConn *gorm.DB) (*UserModel, error) {
+func (r *UserRepositoryImpl) FindByUsername(username string, dbConn *gorm.DB) (*UserModel, error) {
 	var model UserModel
 
 	result := dbConn.
-		Where("email = ?", email).
+		Where("username = ?", username).
 		First(&model)
 
 	if result.Error != nil {
@@ -155,10 +155,10 @@ func (r *UserRepositoryImpl) FindAllWithFilter(
 	query := dbConn.Model(&UserModel{})
 
 	if params != nil {
-		if params.Email != "" {
-			words := strings.Fields(params.Email)
+		if params.Username != "" {
+			words := strings.Fields(params.Username)
 			for _, word := range words {
-				query = query.Where("email LIKE ?", fmt.Sprintf("%%%s%%", word))
+				query = query.Where("username LIKE ?", fmt.Sprintf("%%%s%%", word))
 			}
 		}
 

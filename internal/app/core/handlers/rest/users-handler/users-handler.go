@@ -27,21 +27,21 @@ func GetUserById(
 	return result, nil
 }
 
-func GetUserByEmail(
+func GetUserByUsername(
 	ctx context.Context,
-	email string,
+	username string,
 ) (*users_entities.UserResponse, error) {
 	userService := deps.Container.Core.Services.UsersService
 
-	usersLogger.Debugf("find user with email=%s", email)
+	usersLogger.Debugf("find user with username=%s", username)
 
-	result, err := userService.GetUserByEmail(ctx, email)
+	result, err := userService.GetUserByUsername(ctx, username)
 	if err != nil {
-		usersLogger.Errorf("failed to find user with email=%s: %v", email, err)
+		usersLogger.Errorf("failed to find user with username=%s: %v", username, err)
 		return nil, err
 	}
 
-	usersLogger.Debugf("user with email=%s found; result=%v", email, result)
+	usersLogger.Debugf("user with username=%s found; result=%v", username, result)
 
 	return result, nil
 }

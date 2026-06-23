@@ -15,6 +15,110 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/login": {
+            "post": {
+                "description": "Аутентификация; JWT устанавливаются в HttpOnly cookies",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_auth-entities.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_auth-entities.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/register": {
+            "post": {
+                "description": "Регистрация нового пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register",
+                "parameters": [
+                    {
+                        "description": "Registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_auth-entities.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "Получить список пользователей без фильтра",
@@ -97,9 +201,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/by-email": {
+        "/api/v1/users/by-username": {
             "get": {
-                "description": "Получить пользователя по email",
+                "description": "Получить пользователя по username",
                 "consumes": [
                     "application/json"
                 ],
@@ -109,12 +213,12 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Get user by email",
+                "summary": "Get user by username",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User email",
-                        "name": "email",
+                        "description": "User username",
+                        "name": "username",
                         "in": "query",
                         "required": true
                     }
@@ -156,12 +260,6 @@ const docTemplate = `{
                 "summary": "Get users with filter",
                 "parameters": [
                     {
-                        "maxLength": 255,
-                        "type": "string",
-                        "name": "email",
-                        "in": "query"
-                    },
-                    {
                         "maximum": 100,
                         "minimum": 1,
                         "type": "integer",
@@ -178,6 +276,12 @@ const docTemplate = `{
                         "minimum": 0,
                         "type": "integer",
                         "name": "shift",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 255,
+                        "type": "string",
+                        "name": "username",
                         "in": "query"
                     }
                 ],
@@ -346,18 +450,46 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest": {
+        "mkk_basis_rest_api_internal_app_core_entities_auth-entities.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "access_expires_at": {
+                    "type": "string"
+                },
+                "refresh_expires_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse"
+                }
+            }
+        },
+        "mkk_basis_rest_api_internal_app_core_entities_auth-entities.LoginRequest": {
             "type": "object",
             "required": [
-                "email",
-                "name",
-                "password"
+                "password",
+                "username"
             ],
             "properties": {
-                "email": {
+                "password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                },
+                "username": {
                     "type": "string",
                     "maxLength": 255
-                },
+                }
+            }
+        },
+        "mkk_basis_rest_api_internal_app_core_entities_auth-entities.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "password",
+                "username"
+            ],
+            "properties": {
                 "name": {
                     "type": "string",
                     "maxLength": 255,
@@ -367,6 +499,32 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 72,
                     "minLength": 8
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
+        },
+        "mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 255
                 }
             }
         },
@@ -376,9 +534,6 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -386,6 +541,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

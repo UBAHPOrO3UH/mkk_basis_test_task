@@ -36,9 +36,9 @@ type UserService interface {
 	) (*users_entities.UserResponse, error)
 	DeleteUser(ctx context.Context, id uint64) (*uint64, error)
 	GetUserByID(ctx context.Context, id uint64) (*users_entities.UserResponse, error)
-	GetUserByEmail(
+	GetUserByUsername(
 		ctx context.Context,
-		email string,
+		username string,
 	) (*users_entities.UserResponse, error)
 	GetUsers(ctx context.Context) ([]*users_entities.UserResponse, error)
 	GetUsersFilter(
@@ -66,20 +66,20 @@ func (s *UserServiceImpl) CreateUser(
 	ctx context.Context,
 	request *users_entities.UserRequest,
 ) (*users_entities.UserResponse, error) {
-	usersLogger.Infof("create user with email=%s", request.Email)
+	usersLogger.Infof("create user with username=%s", request.Username)
 
 	var createdUser *users.UserModel
 
 	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		email := strings.TrimSpace(request.Email)
+		username := strings.TrimSpace(request.Username)
 
-		foundUser, err := s.userRepository.FindByEmail(email, tx)
+		foundUser, err := s.userRepository.FindByUsername(username, tx)
 		if err != nil {
 			return err
 		}
 
 		if foundUser != nil {
-			return fmt.Errorf("%w: email=%s", ErrUserAlreadyExists, email)
+			return fmt.Errorf("%w: username=%s", ErrUserAlreadyExists, username)
 		}
 
 		passwordHash, err := common.HashPassword(request.Password)
@@ -88,6 +88,7 @@ func (s *UserServiceImpl) CreateUser(
 		}
 
 		model := request.ToModel(passwordHash)
+		model.Username = username
 
 		createdModel, err := s.userRepository.Create(model, tx)
 		if err != nil {
@@ -99,7 +100,7 @@ func (s *UserServiceImpl) CreateUser(
 		return nil
 	})
 	if err != nil {
-		usersLogger.Errorf("failed to create user with email=%s: %v", request.Email, err)
+		usersLogger.Errorf("failed to create user with username=%s: %v", request.Username, err)
 		return nil, err
 	}
 
@@ -124,17 +125,6 @@ func (s *UserServiceImpl) UpdateUser(
 		}
 		if foundUser == nil {
 			return ErrUserNotFound
-		}
-
-		email := strings.TrimSpace(request.Email)
-
-		userWithSameEmail, err := s.userRepository.FindByEmail(email, tx)
-		if err != nil {
-			return err
-		}
-
-		if userWithSameEmail != nil && userWithSameEmail.ID != id {
-			return fmt.Errorf("%w: email=%s", ErrUserAlreadyExists, email)
 		}
 
 		passwordHash := foundUser.PasswordHash
@@ -234,16 +224,16 @@ func (s *UserServiceImpl) GetUserByID(
 	return users_entities.FromModelResponse(user), nil
 }
 
-func (s *UserServiceImpl) GetUserByEmail(
+func (s *UserServiceImpl) GetUserByUsername(
 	ctx context.Context,
-	email string,
+	username string,
 ) (*users_entities.UserResponse, error) {
-	usersLogger.Infof("get user by email=%s", email)
+	usersLogger.Infof("get user by username=%s", username)
 
 	var user *users.UserModel
 
 	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		result, err := s.userRepository.FindByEmail(strings.TrimSpace(email), tx)
+		result, err := s.userRepository.FindByUsername(strings.TrimSpace(username), tx)
 		if err != nil {
 			return err
 		}
@@ -253,11 +243,11 @@ func (s *UserServiceImpl) GetUserByEmail(
 		return nil
 	})
 	if err != nil {
-		usersLogger.Errorf("failed to get user by email=%s: %v", email, err)
+		usersLogger.Errorf("failed to get user by username=%s: %v", username, err)
 		return nil, err
 	}
 	if user == nil {
-		usersLogger.Errorf("failed to get user by email=%s", email)
+		usersLogger.Errorf("failed to get user by username=%s", username)
 		return nil, ErrUserNotFound
 	}
 

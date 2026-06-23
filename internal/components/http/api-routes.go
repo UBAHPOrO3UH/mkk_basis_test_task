@@ -2,6 +2,7 @@ package http
 
 import (
 	"mkk_basis/rest_api/api/docs"
+	auth_router "mkk_basis/rest_api/internal/app/core/transport/rest/auth-router"
 	users_router "mkk_basis/rest_api/internal/app/core/transport/rest/users-router"
 	"net/http"
 	"time"
@@ -76,5 +77,6 @@ func GetRoutes() *gin.Engine {
 func AddApiRoutes(router *gin.Engine) {
 
 	api := router.Group("/api/v1")
+	auth_router.AddRoutes(api)
 	users_router.AddRoutes(api)
 }
