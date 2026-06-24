@@ -21,6 +21,11 @@ func PreRun(ctx context.Context, reload bool) error {
 		panic(fmt.Errorf("error run db migrations:%v", err))
 	}
 
+	if err = container.Infrastructure.RedisClient.Launch(ctx); err != nil {
+		_ = container.Infrastructure.TransactionManager.Stop()
+		panic(fmt.Errorf("error launch redis:%v", err))
+	}
+
 	return nil
 }
 
@@ -30,5 +35,6 @@ func PostRun(ctx context.Context) {
 }
 func OnStop(ctx context.Context) {
 	container := deps.Container
+	_ = container.Infrastructure.RedisClient.Stop()
 	_ = container.Infrastructure.TransactionManager.Stop()
 }

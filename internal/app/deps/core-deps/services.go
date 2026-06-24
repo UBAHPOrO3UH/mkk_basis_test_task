@@ -2,6 +2,7 @@ package core_deps
 
 import (
 	auth_service "mkk_basis/rest_api/internal/app/core/services/auth-service"
+	cache_service "mkk_basis/rest_api/internal/app/core/services/cache-service"
 	tasks_service "mkk_basis/rest_api/internal/app/core/services/tasks-service"
 	teams_service "mkk_basis/rest_api/internal/app/core/services/teams-service"
 	users_service "mkk_basis/rest_api/internal/app/core/services/users-service"
@@ -14,6 +15,7 @@ type ServicesDependencies struct {
 	AuthService  auth_service.AuthService
 	TeamsService teams_service.TeamService
 	TasksService tasks_service.TaskService
+	CacheService cache_service.CacheService
 }
 
 func NewServicesDependencies(infrastructureDeps *infrastructure_deps.InfrastructureDependencies, repoDeps *RepositoryDependencies) *ServicesDependencies {
@@ -28,17 +30,20 @@ func NewServicesDependencies(infrastructureDeps *infrastructure_deps.Infrastruct
 		repoDeps.TeamMembersRepository,
 		repoDeps.UsersRepository,
 	)
+	cacheService := cache_service.NewCacheService(infrastructureDeps.RedisClient)
 	tasksService := tasks_service.NewTaskService(
 		infrastructureDeps.TransactionManager,
 		repoDeps.TasksRepository,
 		repoDeps.TaskHistoryRepository,
 		repoDeps.TaskCommentsRepository,
 		repoDeps.TeamMembersRepository,
+		cacheService,
 	)
 	return &ServicesDependencies{
 		UsersService: usersService,
 		AuthService:  authService,
 		TeamsService: teamsService,
 		TasksService: tasksService,
+		CacheService: cacheService,
 	}
 }

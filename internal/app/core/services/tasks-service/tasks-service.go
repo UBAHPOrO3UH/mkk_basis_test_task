@@ -12,6 +12,7 @@ import (
 	task_history "mkk_basis/rest_api/internal/app/core/repositorys/task-history"
 	"mkk_basis/rest_api/internal/app/core/repositorys/tasks"
 	team_members "mkk_basis/rest_api/internal/app/core/repositorys/team-members"
+	cache_service "mkk_basis/rest_api/internal/app/core/services/cache-service"
 	database_service "mkk_basis/rest_api/internal/app/infrastructure/database-service"
 
 	"gorm.io/gorm"
@@ -47,6 +48,7 @@ type TaskServiceImpl struct {
 	taskHistoryRepository task_history.TaskHistoryRepository
 	taskCommentRepository task_comments.TaskCommentRepository
 	teamMemberRepository  team_members.TeamMemberRepository
+	cacheService          cache_service.CacheService
 }
 
 func NewTaskService(
@@ -55,6 +57,7 @@ func NewTaskService(
 	taskHistoryRepository task_history.TaskHistoryRepository,
 	taskCommentRepository task_comments.TaskCommentRepository,
 	teamMemberRepository team_members.TeamMemberRepository,
+	cacheService cache_service.CacheService,
 ) TaskService {
 	return &TaskServiceImpl{
 		tm:                    tm,
@@ -62,6 +65,7 @@ func NewTaskService(
 		taskHistoryRepository: taskHistoryRepository,
 		taskCommentRepository: taskCommentRepository,
 		teamMemberRepository:  teamMemberRepository,
+		cacheService:          cacheService,
 	}
 }
 
@@ -103,6 +107,7 @@ func (s *TaskServiceImpl) CreateTask(
 		return nil, err
 	}
 
+	s.invalidateTeamTasksCache(ctx, createdTask.TeamID)
 	tasksLogger.Infof("task created id=%d team_id=%d user_id=%d", createdTask.ID, createdTask.TeamID, userID)
 	return taskResponse(createdTask), nil
 }
@@ -119,12 +124,27 @@ func (s *TaskServiceImpl) GetTasks(
 		return nil, ErrInvalidTaskStatus
 	}
 
-	response := &FoundTasksResponse{Tasks: make([]*tasks_entities.TaskResponse, 0)}
 	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		if err := s.requireTeamMember(params.TeamID, userID, tx); err != nil {
-			return err
-		}
+		return s.requireTeamMember(params.TeamID, userID, tx)
+	})
+	if err != nil {
+		tasksLogger.Errorf("failed to check team membership team_id=%d user_id=%d: %v", params.TeamID, userID, err)
+		return nil, err
+	}
 
+	var cacheVersion int64
+	if s.cacheService != nil {
+		cachedTasks, contentRange, version, found, cacheErr := s.cacheService.GetTeamTasks(ctx, params)
+		cacheVersion = version
+		if cacheErr != nil {
+			tasksLogger.Warnf("failed to get team tasks from cache team_id=%d: %v", params.TeamID, cacheErr)
+		} else if found {
+			return &FoundTasksResponse{Tasks: cachedTasks, ContentRange: contentRange}, nil
+		}
+	}
+
+	response := &FoundTasksResponse{Tasks: make([]*tasks_entities.TaskResponse, 0)}
+	err = s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
 		found, err := s.taskRepository.FindAllWithFilter(params, tx)
 		if err != nil {
 			return err
@@ -140,6 +160,18 @@ func (s *TaskServiceImpl) GetTasks(
 	if err != nil {
 		tasksLogger.Errorf("failed to get tasks team_id=%d user_id=%d: %v", params.TeamID, userID, err)
 		return nil, err
+	}
+
+	if s.cacheService != nil {
+		if cacheErr := s.cacheService.SetTeamTasks(
+			ctx,
+			params,
+			cacheVersion,
+			response.Tasks,
+			response.ContentRange,
+		); cacheErr != nil {
+			tasksLogger.Warnf("failed to set team tasks cache team_id=%d: %v", params.TeamID, cacheErr)
+		}
 	}
 
 	return response, nil
@@ -182,7 +214,10 @@ func (s *TaskServiceImpl) UpdateTask(
 		return nil, ErrInvalidTaskStatus
 	}
 
-	var updatedTask *tasks.TaskModel
+	var (
+		updatedTask *tasks.TaskModel
+		taskChanged bool
+	)
 	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
 		currentTask, err := s.taskRepository.FindByID(taskID, tx)
 		if err != nil {
@@ -268,6 +303,7 @@ func (s *TaskServiceImpl) UpdateTask(
 		if err != nil {
 			return err
 		}
+		taskChanged = true
 		_, err = s.taskHistoryRepository.CreateBatch(history, tx)
 		return err
 	})
@@ -276,6 +312,9 @@ func (s *TaskServiceImpl) UpdateTask(
 		return nil, err
 	}
 
+	if taskChanged {
+		s.invalidateTeamTasksCache(ctx, updatedTask.TeamID)
+	}
 	tasksLogger.Infof("task updated id=%d user_id=%d", taskID, userID)
 	return taskResponse(updatedTask), nil
 }
@@ -339,6 +378,15 @@ func (s *TaskServiceImpl) validAssignee(teamID uint64, assigneeID *uint64, tx *g
 		return nil, ErrAssigneeNotTeamMember
 	}
 	return assigneeID, nil
+}
+
+func (s *TaskServiceImpl) invalidateTeamTasksCache(ctx context.Context, teamID uint64) {
+	if s.cacheService == nil {
+		return
+	}
+	if err := s.cacheService.InvalidateTeamTasks(ctx, teamID); err != nil {
+		tasksLogger.Warnf("failed to invalidate team tasks cache team_id=%d: %v", teamID, err)
+	}
 }
 
 func canUpdateTask(

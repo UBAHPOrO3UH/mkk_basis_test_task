@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path"
 	"reflect"
 	"strings"
 
@@ -22,12 +20,6 @@ type EmptyError struct {
 	nameFields []string
 }
 
-func NewEmptyError(nameFields []string) *EmptyError {
-	return &EmptyError{
-		nameFields: nameFields,
-	}
-}
-
 func (e *EmptyError) Error() string {
 	if len(e.nameFields) <= 1 {
 		return fmt.Sprintf("fields %s is empty", strings.Join(e.nameFields, ", "))
@@ -39,6 +31,7 @@ type AppConfig struct {
 	Server   *ServerConfig
 	AppInfo  *AppInfoConfig
 	Database *DataBaseConfig
+	Redis    *RedisConfig
 	Auth     *AuthConfig
 }
 
@@ -64,6 +57,16 @@ type DataBaseConfig struct {
 	MaxIdleConns           int    `env:"DB_MAX_IDLE_CONNS"     json:"-"`
 	ConnMaxLifetimeMinutes int    `env:"DB_CONN_MAX_LIFETIME_MINUTES"  json:"-"`
 	ConnMaxIdleTimeMinutes int    `env:"DB_CONN_MAX_IDLE_TIME_MINUTES" json:"-"`
+}
+
+type RedisConfig struct {
+	Host                string `env:"REDIS_HOST"                  json:"host"`
+	Port                string `env:"REDIS_PORT"                  json:"port"`
+	Password            string `env:"REDIS_PASSWORD"              json:"-"`
+	DB                  int    `env:"REDIS_DB"                    json:"db"`
+	DialTimeoutSeconds  int    `env:"REDIS_DIAL_TIMEOUT_SECONDS"  json:"dial_timeout_seconds"`
+	ReadTimeoutSeconds  int    `env:"REDIS_READ_TIMEOUT_SECONDS"  json:"read_timeout_seconds"`
+	WriteTimeoutSeconds int    `env:"REDIS_WRITE_TIMEOUT_SECONDS" json:"write_timeout_seconds"`
 }
 
 type AuthConfig struct {
@@ -96,6 +99,14 @@ var CurrentConfig = &AppConfig{
 		MaxIdleConns:           8,
 		ConnMaxLifetimeMinutes: 30,
 		ConnMaxIdleTimeMinutes: 5,
+	},
+	Redis: &RedisConfig{
+		Host:                "localhost",
+		Port:                "6379",
+		DB:                  0,
+		DialTimeoutSeconds:  5,
+		ReadTimeoutSeconds:  3,
+		WriteTimeoutSeconds: 3,
 	},
 	Auth: &AuthConfig{
 		JWTIssuer:             "mkk-basis-rest-api",
@@ -150,40 +161,6 @@ func ReloadConfig() {
 		}
 	}
 	MustApplyEnv()
-}
-
-func RewriteConfig(key string, value interface{}) error {
-	if valueStr, ok := value.(string); ok {
-		value = strings.TrimSpace(valueStr)
-	}
-	if valueArrStr, ok := value.([]string); ok {
-		for i, valueStr := range valueArrStr {
-			valueArrStr[i] = strings.TrimSpace(valueStr)
-		}
-		value = valueArrStr
-	}
-	viper.Set(key, value)
-	if err := os.MkdirAll(configPath, 0o755); err != nil {
-		configLogger.Errorf("Error creating the directory: %s", err)
-		return err
-	}
-	filePath := path.Join(configPath, configName+".yml")
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		content := []byte("")
-		err := os.WriteFile(filePath, content, 0o644)
-		if err != nil {
-			configLogger.Errorf("Error creating the file: %s", err)
-			return err
-		}
-	}
-
-	if err := viper.WriteConfig(); err != nil {
-		configLogger.Errorf("сonfiguration update error: %s", err)
-		return err
-	}
-
-	ReloadConfig()
-	return nil
 }
 
 func ApplyEnv() error {
