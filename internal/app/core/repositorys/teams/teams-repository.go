@@ -97,16 +97,19 @@ func (r *TeamRepositoryImpl) FindAllWithStats(dbConn *gorm.DB) ([]*TeamStatsMode
 		Select(`
 			teams.id,
 			teams.name,
-			COUNT(DISTINCT team_members.user_id) AS member_count,
-			COUNT(DISTINCT CASE
-				WHEN tasks.status = ?
+			(
+				SELECT COUNT(*)
+				FROM team_members
+				WHERE team_members.team_id = teams.id
+			) AS member_count,
+			(
+				SELECT COUNT(*)
+				FROM tasks
+				WHERE tasks.team_id = teams.id
+					AND tasks.status = ?
 					AND tasks.completed_at >= UTC_TIMESTAMP(3) - INTERVAL 7 DAY
-				THEN tasks.id
-			END) AS done_tasks_last_seven_days
+			) AS done_tasks_last_seven_days
 		`, "done").
-		Joins("LEFT JOIN team_members ON team_members.team_id = teams.id").
-		Joins("LEFT JOIN tasks ON tasks.team_id = teams.id").
-		Group("teams.id, teams.name").
 		Order("teams.id DESC").
 		Scan(&models).Error
 	if err != nil {

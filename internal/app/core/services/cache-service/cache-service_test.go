@@ -1,14 +1,67 @@
-package cache_service
+package cache_service_test
 
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	tasks_entities "mkk_basis/rest_api/internal/app/core/entities/tasks-entities"
+	cache_service "mkk_basis/rest_api/internal/app/core/services/cache-service"
+	redis_service "mkk_basis/rest_api/internal/app/infrastructure/redis-service"
+	"mkk_basis/rest_api/internal/mocks"
 	"testing"
 	"time"
-
-	tasks_entities "mkk_basis/rest_api/internal/app/core/entities/tasks-entities"
-	redis_service "mkk_basis/rest_api/internal/app/infrastructure/redis-service"
 )
+
+func TestCacheServiceErrorsWithGeneratedMock(t *testing.T) {
+	t.Run("invalid version", func(t *testing.T) {
+		redis := mocks.NewMockRedisClient(t)
+		redis.On("Get", mock.Anything, "tasks:team:10:version").
+			Return([]byte("invalid"), nil).
+			Once()
+
+		service := cache_service.NewCacheService(redis)
+		_, _, _, _, err := service.GetTeamTasks(context.Background(), &tasks_entities.TaskFilterRequest{TeamID: 10})
+
+		assert.ErrorContains(t, err, "invalid team tasks cache version")
+	})
+
+	t.Run("invalid payload", func(t *testing.T) {
+		redis := mocks.NewMockRedisClient(t)
+		redis.On("Get", mock.Anything, "tasks:team:10:version").
+			Return([]byte(nil), redis_service.ErrKeyNotFound).
+			Once()
+		redis.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+			return key != "tasks:team:10:version"
+		})).
+			Return([]byte("{"), nil).
+			Once()
+
+		service := cache_service.NewCacheService(redis)
+		_, _, _, _, err := service.GetTeamTasks(context.Background(), &tasks_entities.TaskFilterRequest{TeamID: 10})
+
+		assert.ErrorContains(t, err, "failed to decode team tasks cache")
+	})
+
+	t.Run("set error", func(t *testing.T) {
+		redis := mocks.NewMockRedisClient(t)
+		expectedErr := errors.New("redis unavailable")
+		redis.On("Set", mock.Anything, mock.Anything, mock.Anything, cache_service.TeamTasksTTL).
+			Return(expectedErr).
+			Once()
+
+		service := cache_service.NewCacheService(redis)
+		err := service.SetTeamTasks(
+			context.Background(),
+			&tasks_entities.TaskFilterRequest{TeamID: 10},
+			1,
+			[]*tasks_entities.TaskResponse{{ID: 1}},
+			1,
+		)
+
+		assert.ErrorIs(t, err, expectedErr)
+	})
+}
 
 type redisClientStub struct {
 	values map[string][]byte
@@ -47,7 +100,7 @@ func (s *redisClientStub) Incr(_ context.Context, key string) (int64, error) {
 func TestTeamTasksCacheLifecycle(t *testing.T) {
 	ctx := context.Background()
 	redisClient := &redisClientStub{values: make(map[string][]byte)}
-	service := NewCacheService(redisClient)
+	service := cache_service.NewCacheService(redisClient)
 	filter := &tasks_entities.TaskFilterRequest{TeamID: 42}
 
 	_, _, version, found, err := service.GetTeamTasks(ctx, filter)
@@ -59,8 +112,8 @@ func TestTeamTasksCacheLifecycle(t *testing.T) {
 	if err = service.SetTeamTasks(ctx, filter, version, tasks, 1); err != nil {
 		t.Fatalf("failed to set cache: %v", err)
 	}
-	if redisClient.ttl != TeamTasksTTL {
-		t.Fatalf("expected TTL %s, got %s", TeamTasksTTL, redisClient.ttl)
+	if redisClient.ttl != cache_service.TeamTasksTTL {
+		t.Fatalf("expected TTL %s, got %s", cache_service.TeamTasksTTL, redisClient.ttl)
 	}
 
 	cachedTasks, contentRange, _, found, err := service.GetTeamTasks(ctx, filter)

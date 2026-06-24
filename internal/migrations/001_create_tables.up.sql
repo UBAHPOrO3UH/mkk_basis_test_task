@@ -30,7 +30,6 @@ CREATE TABLE team_members (
     joined_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (team_id, user_id),
     KEY idx_team_members_user_id (user_id),
-    KEY idx_team_members_role (role),
     CONSTRAINT fk_team_members_team_id
         FOREIGN KEY (team_id) REFERENCES teams (id)
         ON DELETE CASCADE
@@ -53,9 +52,11 @@ CREATE TABLE tasks (
     updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     completed_at DATETIME(3) NULL,
     PRIMARY KEY (id),
-    KEY idx_tasks_team_status_assignee (team_id, status, assignee_id),
     KEY idx_tasks_team_status_completed (team_id, status, completed_at),
-    KEY idx_tasks_team_created_by_created_at (team_id, created_by, created_at),
+    KEY idx_tasks_created_at_team_created_by (created_at, team_id, created_by),
+    KEY idx_tasks_team_id_id (team_id, id),
+    KEY idx_tasks_team_status_id (team_id, status, id),
+    KEY idx_tasks_team_assignee_id (team_id, assignee_id, id),
     KEY idx_tasks_assignee_id (assignee_id),
     KEY idx_tasks_created_by (created_by),
     CONSTRAINT fk_tasks_team_id

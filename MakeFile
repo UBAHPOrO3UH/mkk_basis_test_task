@@ -1,7 +1,15 @@
 #include .env
-.PHONY: build clean run test docs swagger
+.PHONY: run test test_with_logs mocks docs swagger
 
-BINARY_NAME=myTestProject
+test:
+	go test -race -count=1 -tags=integration ./api/... ./cmd/... ./internal/...
+
+test_with_logs:
+	go test -v -race -count=1 -tags=integration ./api/... ./cmd/... ./internal/...
+
+mocks:
+	go tool mockery
+
 run:
 	go run cmd/rest-api/main.go
 docs: swagger
