@@ -18,6 +18,10 @@ func GetUserTeams(ctx context.Context, userID uint64) ([]*teams_entities.TeamRes
 	return deps.Container.Core.Services.TeamsService.GetUserTeams(ctx, userID)
 }
 
+func GetTeamStats(ctx context.Context) ([]*teams_entities.TeamStatsResponse, error) {
+	return deps.Container.Core.Services.TeamsService.GetTeamStats(ctx)
+}
+
 func InviteUser(
 	ctx context.Context,
 	teamID, inviterID uint64,

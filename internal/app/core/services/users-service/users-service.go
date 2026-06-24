@@ -10,6 +10,7 @@ import (
 	"mkk_basis/rest_api/internal/app/core/repositorys/users"
 	database_service "mkk_basis/rest_api/internal/app/infrastructure/database-service"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -20,8 +21,9 @@ type FoundUsersResponse struct {
 }
 
 var (
-	ErrUserNotFound      = errors.New("User not found")
-	ErrUserAlreadyExists = errors.New("User already exists")
+	ErrUserNotFound         = errors.New("User not found")
+	ErrUserAlreadyExists    = errors.New("User already exists")
+	ErrUserPasswordRequired = errors.New("password is required")
 )
 
 type UserService interface {
@@ -45,6 +47,10 @@ type UserService interface {
 		ctx context.Context,
 		params *users_filter.UserFilterRequest,
 	) (*FoundUsersResponse, error)
+	GetTopTaskCreatorsByTeamForMonth(
+		ctx context.Context,
+		month time.Time,
+	) ([]*users_entities.TeamTopTaskCreatorResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -66,6 +72,10 @@ func (s *UserServiceImpl) CreateUser(
 	ctx context.Context,
 	request *users_entities.UserRequest,
 ) (*users_entities.UserResponse, error) {
+	if request == nil || request.Password == "" {
+		return nil, ErrUserPasswordRequired
+	}
+
 	usersLogger.Infof("create user with username=%s", request.Username)
 
 	var createdUser *users.UserModel
@@ -322,4 +332,32 @@ func (s *UserServiceImpl) GetUsersFilter(
 		Users:        response,
 		ContentRange: foundUsers.ContentRange,
 	}, nil
+}
+
+func (s *UserServiceImpl) GetTopTaskCreatorsByTeamForMonth(
+	ctx context.Context,
+	month time.Time,
+) ([]*users_entities.TeamTopTaskCreatorResponse, error) {
+	var models []*users.TeamTopTaskCreatorModel
+
+	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		result, err := s.userRepository.FindTopTaskCreatorsByTeamForMonth(month, tx)
+		if err != nil {
+			return err
+		}
+
+		models = result
+		return nil
+	})
+	if err != nil {
+		usersLogger.Errorf("failed to get top task creators for month=%s: %v", month.Format("2006-01"), err)
+		return nil, err
+	}
+
+	response := make([]*users_entities.TeamTopTaskCreatorResponse, 0, len(models))
+	for _, model := range models {
+		response = append(response, users_entities.FromTeamTopTaskCreatorModel(model))
+	}
+
+	return response, nil
 }

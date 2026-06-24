@@ -17,7 +17,7 @@ import (
 var ErrInvalidCredentials = errors.New("invalid username or password")
 
 type AuthService interface {
-	Register(context.Context, *auth_entities.RegisterRequest) (*users_entities.UserResponse, error)
+	Register(context.Context, *users_entities.UserRequest) (*users_entities.UserResponse, error)
 	Login(context.Context, *auth_entities.LoginRequest) (*users_entities.UserResponse, *TokenPair, error)
 	ValidateAccess(string) (*Claims, error)
 	RefreshAccess(context.Context, string) (*AccessToken, error)
@@ -46,11 +46,11 @@ func NewAuthService(
 
 func (s *AuthServiceImpl) Register(
 	ctx context.Context,
-	request *auth_entities.RegisterRequest,
+	request *users_entities.UserRequest,
 ) (*users_entities.UserResponse, error) {
 	authLogger.Infof("register user username=%s", request.Username)
 
-	user, err := s.usersService.CreateUser(ctx, request.ToUserRequest())
+	user, err := s.usersService.CreateUser(ctx, request)
 	if err != nil {
 		authLogger.Errorf("failed to register user username=%s: %v", request.Username, err)
 		return nil, err

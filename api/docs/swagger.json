@@ -84,7 +84,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_auth-entities.RegisterRequest"
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest"
                         }
                     }
                 ],
@@ -197,7 +197,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.CreateTaskRequest"
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.TaskRequest"
                         }
                     }
                 ],
@@ -214,6 +214,41 @@
                                     "properties": {
                                         "result": {
                                             "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.TaskResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/integrity/invalid-assignees": {
+            "get": {
+                "description": "Найти задачи, где назначенный пользователь не является участником команды задачи",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Find tasks with invalid assignees",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.TaskResponse"
+                                            }
                                         }
                                     }
                                 }
@@ -250,7 +285,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.UpdateTaskRequest"
+                            "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_tasks-entities.TaskRequest"
                         }
                     }
                 ],
@@ -390,6 +425,41 @@
                                     "properties": {
                                         "result": {
                                             "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/teams/stats": {
+            "get": {
+                "description": "Получить для каждой команды количество участников и выполненных за последние 7 дней задач",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Get team stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamStatsResponse"
+                                            }
                                         }
                                     }
                                 }
@@ -643,6 +713,50 @@
                 }
             }
         },
+        "/api/v1/users/top-task-creators": {
+            "get": {
+                "description": "Получить топ-3 пользователей по количеству созданных задач в каждой команде за указанный месяц",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get top task creators by team",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Month in YYYY-MM format",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/mkk_basis_rest_api_internal_common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.TeamTopTaskCreatorResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/{id}": {
             "get": {
                 "description": "Получить пользователя по ID",
@@ -806,56 +920,9 @@
             "properties": {
                 "password": {
                     "type": "string",
-                    "maxLength": 72,
-                    "minLength": 8
+                    "maxLength": 255
                 },
                 "username": {
-                    "type": "string",
-                    "maxLength": 255
-                }
-            }
-        },
-        "mkk_basis_rest_api_internal_app_core_entities_auth-entities.RegisterRequest": {
-            "type": "object",
-            "required": [
-                "name",
-                "password",
-                "username"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 2
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 72,
-                    "minLength": 8
-                },
-                "username": {
-                    "type": "string",
-                    "maxLength": 255
-                }
-            }
-        },
-        "mkk_basis_rest_api_internal_app_core_entities_tasks-entities.CreateTaskRequest": {
-            "type": "object",
-            "required": [
-                "team_id",
-                "title"
-            ],
-            "properties": {
-                "assignee_id": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "team_id": {
-                    "type": "integer"
-                },
-                "title": {
                     "type": "string",
                     "maxLength": 255
                 }
@@ -884,6 +951,32 @@
                 },
                 "task_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "mkk_basis_rest_api_internal_app_core_entities_tasks-entities.TaskRequest": {
+            "type": "object",
+            "properties": {
+                "assignee_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "todo",
+                        "in_progress",
+                        "done"
+                    ]
+                },
+                "team_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255
                 }
             }
         },
@@ -919,29 +1012,6 @@
                 },
                 "updated_at": {
                     "type": "string"
-                }
-            }
-        },
-        "mkk_basis_rest_api_internal_app_core_entities_tasks-entities.UpdateTaskRequest": {
-            "type": "object",
-            "properties": {
-                "assignee_id": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "todo",
-                        "in_progress",
-                        "done"
-                    ]
-                },
-                "title": {
-                    "type": "string",
-                    "maxLength": 255
                 }
             }
         },
@@ -1018,11 +1088,41 @@
                 }
             }
         },
+        "mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamStatsResponse": {
+            "type": "object",
+            "properties": {
+                "done_tasks_last_seven_days": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "mkk_basis_rest_api_internal_app_core_entities_users-entities.TeamTopTaskCreatorResponse": {
+            "type": "object",
+            "properties": {
+                "task_count": {
+                    "type": "integer"
+                },
+                "team": {
+                    "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_teams-entities.TeamResponse"
+                },
+                "user": {
+                    "$ref": "#/definitions/mkk_basis_rest_api_internal_app_core_entities_users-entities.UserResponse"
+                }
+            }
+        },
         "mkk_basis_rest_api_internal_app_core_entities_users-entities.UserRequest": {
             "type": "object",
             "required": [
                 "name",
-                "password",
                 "username"
             ],
             "properties": {

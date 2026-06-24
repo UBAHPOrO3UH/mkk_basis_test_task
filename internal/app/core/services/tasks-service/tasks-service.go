@@ -22,6 +22,7 @@ var (
 	ErrTeamMembershipRequired = errors.New("team membership required")
 	ErrAssigneeNotTeamMember  = errors.New("assignee is not a team member")
 	ErrInsufficientPermission = errors.New("insufficient permission")
+	ErrTaskTeamRequired       = errors.New("task team id is required")
 	ErrTaskTitleRequired      = errors.New("task title is required")
 	ErrInvalidTaskStatus      = errors.New("invalid task status")
 	ErrNoTaskChanges          = errors.New("no task changes provided")
@@ -33,9 +34,10 @@ type FoundTasksResponse struct {
 }
 
 type TaskService interface {
-	CreateTask(ctx context.Context, userID uint64, request *tasks_entities.CreateTaskRequest) (*tasks_entities.TaskResponse, error)
+	CreateTask(ctx context.Context, userID uint64, request *tasks_entities.TaskRequest) (*tasks_entities.TaskResponse, error)
 	GetTasks(ctx context.Context, userID uint64, params *tasks_entities.TaskFilterRequest) (*FoundTasksResponse, error)
-	UpdateTask(ctx context.Context, taskID, userID uint64, request *tasks_entities.UpdateTaskRequest) (*tasks_entities.TaskResponse, error)
+	GetTasksWithAssigneeOutsideTeam(ctx context.Context) ([]*tasks_entities.TaskResponse, error)
+	UpdateTask(ctx context.Context, taskID, userID uint64, request *tasks_entities.TaskRequest) (*tasks_entities.TaskResponse, error)
 	GetTaskHistory(ctx context.Context, taskID, userID uint64) ([]*tasks_entities.TaskHistoryResponse, error)
 }
 
@@ -66,9 +68,12 @@ func NewTaskService(
 func (s *TaskServiceImpl) CreateTask(
 	ctx context.Context,
 	userID uint64,
-	request *tasks_entities.CreateTaskRequest,
+	request *tasks_entities.TaskRequest,
 ) (*tasks_entities.TaskResponse, error) {
-	if request == nil || strings.TrimSpace(request.Title) == "" {
+	if request == nil || request.TeamID == 0 {
+		return nil, ErrTaskTeamRequired
+	}
+	if request.Title == nil || strings.TrimSpace(*request.Title) == "" {
 		return nil, ErrTaskTitleRequired
 	}
 
@@ -85,7 +90,7 @@ func (s *TaskServiceImpl) CreateTask(
 
 		createdTask, err = s.taskRepository.Create(&tasks.TaskModel{
 			TeamID:      request.TeamID,
-			Title:       strings.TrimSpace(request.Title),
+			Title:       strings.TrimSpace(*request.Title),
 			Description: request.Description,
 			Status:      tasks.TaskStatusTodo,
 			AssigneeID:  assigneeID,
@@ -140,10 +145,35 @@ func (s *TaskServiceImpl) GetTasks(
 	return response, nil
 }
 
+func (s *TaskServiceImpl) GetTasksWithAssigneeOutsideTeam(
+	ctx context.Context,
+) ([]*tasks_entities.TaskResponse, error) {
+	response := make([]*tasks_entities.TaskResponse, 0)
+
+	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		models, err := s.taskRepository.FindAllWithAssigneeOutsideTeam(tx)
+		if err != nil {
+			return err
+		}
+
+		response = make([]*tasks_entities.TaskResponse, 0, len(models))
+		for _, model := range models {
+			response = append(response, taskResponse(model))
+		}
+		return nil
+	})
+	if err != nil {
+		tasksLogger.Errorf("failed to get tasks with assignee outside team: %v", err)
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func (s *TaskServiceImpl) UpdateTask(
 	ctx context.Context,
 	taskID, userID uint64,
-	request *tasks_entities.UpdateTaskRequest,
+	request *tasks_entities.TaskRequest,
 ) (*tasks_entities.TaskResponse, error) {
 	if request == nil || !hasTaskChanges(request) {
 		return nil, ErrNoTaskChanges
@@ -315,7 +345,7 @@ func canUpdateTask(
 	task *tasks.TaskModel,
 	member *team_members.TeamMemberModel,
 	userID uint64,
-	request *tasks_entities.UpdateTaskRequest,
+	request *tasks_entities.TaskRequest,
 ) bool {
 	if member.Role == team_members.TeamRoleOwner || member.Role == team_members.TeamRoleAdmin || task.CreatedBy == userID {
 		return true
@@ -326,7 +356,7 @@ func canUpdateTask(
 	return isAssignee && statusOnly
 }
 
-func hasTaskChanges(request *tasks_entities.UpdateTaskRequest) bool {
+func hasTaskChanges(request *tasks_entities.TaskRequest) bool {
 	return request.Title != nil || request.Description != nil || request.Status != nil || request.AssigneeID != nil
 }
 

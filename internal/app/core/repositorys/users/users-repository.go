@@ -28,6 +28,23 @@ type FoundUsers struct {
 	ContentRange int64
 }
 
+type TeamTopTaskCreatorModel struct {
+	TeamID        uint64     `gorm:"column:team_id"`
+	TeamName      string     `gorm:"column:team_name"`
+	TeamCreatedBy uint64     `gorm:"column:team_created_by"`
+	TeamRole      string     `gorm:"column:team_role"`
+	TeamJoinedAt  *time.Time `gorm:"column:team_joined_at"`
+	TeamCreatedAt time.Time  `gorm:"column:team_created_at"`
+	TeamUpdatedAt time.Time  `gorm:"column:team_updated_at"`
+	UserID        uint64     `gorm:"column:user_id"`
+	Username      string     `gorm:"column:username"`
+	Name          string     `gorm:"column:name"`
+	UserCreatedAt time.Time  `gorm:"column:user_created_at"`
+	UserUpdatedAt time.Time  `gorm:"column:user_updated_at"`
+	TaskCount     int64      `gorm:"column:task_count"`
+	TeamRank      uint       `gorm:"column:team_rank"`
+}
+
 type UserRepository interface {
 	Create(model *UserModel, dbConn *gorm.DB) (*UserModel, error)
 	Update(id uint64, model *UserModel, dbConn *gorm.DB) (*UserModel, error)
@@ -37,6 +54,7 @@ type UserRepository interface {
 	FindByUsername(username string, dbConn *gorm.DB) (*UserModel, error)
 	FindAll(dbConn *gorm.DB) ([]*UserModel, error)
 	FindAllWithFilter(params *users_entities.UserFilterRequest, dbConn *gorm.DB) (*FoundUsers, error)
+	FindTopTaskCreatorsByTeamForMonth(month time.Time, dbConn *gorm.DB) ([]*TeamTopTaskCreatorModel, error)
 }
 
 type UserRepositoryImpl struct{}
@@ -200,4 +218,74 @@ func (r *UserRepositoryImpl) FindAllWithFilter(
 		Users:        models,
 		ContentRange: contentRange,
 	}, nil
+}
+
+func (r *UserRepositoryImpl) FindTopTaskCreatorsByTeamForMonth(
+	month time.Time,
+	dbConn *gorm.DB,
+) ([]*TeamTopTaskCreatorModel, error) {
+	models := make([]*TeamTopTaskCreatorModel, 0)
+	monthStart := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
+	monthEnd := monthStart.AddDate(0, 1, 0)
+
+	err := dbConn.Raw(`
+		SELECT
+			ranked.team_id,
+			ranked.team_name,
+			ranked.team_created_by,
+			COALESCE(team_members.role, '') AS team_role,
+			team_members.joined_at AS team_joined_at,
+			ranked.team_created_at,
+			ranked.team_updated_at,
+			ranked.user_id,
+			ranked.username,
+			ranked.name,
+			ranked.user_created_at,
+			ranked.user_updated_at,
+			ranked.task_count,
+			ranked.team_rank
+		FROM (
+			SELECT
+				tasks.team_id,
+				teams.name AS team_name,
+				teams.created_by AS team_created_by,
+				teams.created_at AS team_created_at,
+				teams.updated_at AS team_updated_at,
+				users.id AS user_id,
+				users.username,
+				users.name,
+				users.created_at AS user_created_at,
+				users.updated_at AS user_updated_at,
+				COUNT(*) AS task_count,
+				ROW_NUMBER() OVER (
+					PARTITION BY tasks.team_id
+					ORDER BY COUNT(*) DESC, users.id ASC
+				) AS team_rank
+			FROM tasks
+			JOIN teams ON teams.id = tasks.team_id
+			JOIN users ON users.id = tasks.created_by
+			WHERE tasks.created_at >= ? AND tasks.created_at < ?
+			GROUP BY
+				tasks.team_id,
+				teams.name,
+				teams.created_by,
+				teams.created_at,
+				teams.updated_at,
+				users.id,
+				users.username,
+				users.name,
+				users.created_at,
+				users.updated_at
+		) AS ranked
+		LEFT JOIN team_members
+			ON team_members.team_id = ranked.team_id
+			AND team_members.user_id = ranked.user_id
+		WHERE ranked.team_rank <= 3
+		ORDER BY ranked.team_id ASC, ranked.team_rank ASC
+	`, monthStart, monthEnd).Scan(&models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return models, nil
 }

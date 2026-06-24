@@ -2,14 +2,8 @@ package tasks_entities
 
 import "time"
 
-type CreateTaskRequest struct {
-	TeamID      uint64  `json:"team_id" binding:"required"`
-	Title       string  `json:"title" binding:"required,max=255"`
-	Description *string `json:"description"`
-	AssigneeID  *uint64 `json:"assignee_id"`
-}
-
-type UpdateTaskRequest struct {
+type TaskRequest struct {
+	TeamID      uint64  `json:"team_id"`
 	Title       *string `json:"title" binding:"omitempty,max=255"`
 	Description *string `json:"description"`
 	Status      *string `json:"status" binding:"omitempty,oneof=todo in_progress done"`

@@ -43,6 +43,7 @@ type TaskRepository interface {
 	Update(id uint64, values map[string]interface{}, dbConn *gorm.DB) (*TaskModel, error)
 	FindByID(id uint64, dbConn *gorm.DB) (*TaskModel, error)
 	FindAllWithFilter(params *tasks_entities.TaskFilterRequest, dbConn *gorm.DB) (*FoundTasks, error)
+	FindAllWithAssigneeOutsideTeam(dbConn *gorm.DB) ([]*TaskModel, error)
 }
 
 type TaskRepositoryImpl struct{}
@@ -113,4 +114,26 @@ func (r *TaskRepositoryImpl) FindAllWithFilter(
 	}
 
 	return &FoundTasks{Tasks: models, ContentRange: contentRange}, nil
+}
+
+func (r *TaskRepositoryImpl) FindAllWithAssigneeOutsideTeam(dbConn *gorm.DB) ([]*TaskModel, error) {
+	models := make([]*TaskModel, 0)
+
+	err := dbConn.
+		Table("tasks").
+		Select("tasks.*").
+		Joins(`
+			LEFT JOIN team_members
+				ON team_members.team_id = tasks.team_id
+				AND team_members.user_id = tasks.assignee_id
+		`).
+		Where("tasks.assignee_id IS NOT NULL").
+		Where("team_members.user_id IS NULL").
+		Order("tasks.id DESC").
+		Scan(&models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return models, nil
 }

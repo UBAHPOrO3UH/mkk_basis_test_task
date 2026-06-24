@@ -10,7 +10,7 @@ import (
 
 func Register(
 	ctx context.Context,
-	request *auth_entities.RegisterRequest,
+	request *users_entities.UserRequest,
 ) (*users_entities.UserResponse, error) {
 	authLogger.Infof("register user username=%s", request.Username)
 

@@ -9,6 +9,7 @@ import (
 	auth_middleware "mkk_basis/rest_api/internal/components/http/middlewares"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +22,7 @@ func AddRoutes(r *gin.RouterGroup) {
 		router.GET("", getUsersRoute)
 		router.GET("/filter", getUsersFilterRoute)
 		router.GET("/by-username", getUserByUsernameRoute)
+		router.GET("/top-task-creators", getTopTaskCreatorsRoute)
 
 		router.GET("/:id", getUserRoute)
 		router.PUT("/:id", updateUserRoute)
@@ -135,6 +137,31 @@ func getUsersFilterRoute(c *gin.Context) {
 
 	c.Header("Content-Range", strconv.FormatInt(usersResp.ContentRange, 10))
 	c.JSON(http.StatusOK, common.ResultResponseNoErr(usersResp.Users))
+}
+
+// Get top task creators
+//
+//	@Summary		Get top task creators by team
+//	@Description	Получить топ-3 пользователей по количеству созданных задач в каждой команде за указанный месяц
+//	@Tags			users
+//	@Produce		json
+//	@Param			month	query		string	true	"Month in YYYY-MM format"
+//	@Success		200		{object}	common.APIResponse{result=[]users_entities.TeamTopTaskCreatorResponse}
+//	@Router			/api/v1/users/top-task-creators [get]
+func getTopTaskCreatorsRoute(c *gin.Context) {
+	month, err := time.Parse("2006-01", c.Query("month"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse(errors.New("month must be in YYYY-MM format")))
+		return
+	}
+
+	creators, err := users_handler.GetTopTaskCreatorsByTeamForMonth(c.Request.Context(), month)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultResponseNoErr(creators))
 }
 
 // Get user by id

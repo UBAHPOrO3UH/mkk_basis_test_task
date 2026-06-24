@@ -5,23 +5,9 @@ import (
 	"time"
 )
 
-type RegisterRequest struct {
-	Username string `json:"username" binding:"required,max=255"`
-	Password string `json:"password" binding:"required,min=8,max=72"`
-	Name     string `json:"name" binding:"required,min=2,max=255"`
-}
-
-func (r *RegisterRequest) ToUserRequest() *users_entities.UserRequest {
-	return &users_entities.UserRequest{
-		Username: r.Username,
-		Password: r.Password,
-		Name:     r.Name,
-	}
-}
-
 type LoginRequest struct {
 	Username string `json:"username" binding:"required,max=255"`
-	Password string `json:"password" binding:"required,min=8,max=72"`
+	Password string `json:"password" binding:"required,max=255"`
 }
 
 type AuthResponse struct {

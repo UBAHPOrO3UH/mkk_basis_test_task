@@ -3,6 +3,7 @@ package auth_router
 import (
 	"errors"
 	auth_entities "mkk_basis/rest_api/internal/app/core/entities/auth-entities"
+	users_entities "mkk_basis/rest_api/internal/app/core/entities/users-entities"
 	auth_handler "mkk_basis/rest_api/internal/app/core/handlers/rest/auth-handler"
 	auth_service "mkk_basis/rest_api/internal/app/core/services/auth-service"
 	users_service "mkk_basis/rest_api/internal/app/core/services/users-service"
@@ -25,22 +26,24 @@ func AddRoutes(router *gin.RouterGroup) {
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		auth_entities.RegisterRequest	true	"Registration data"
+//	@Param			request	body		users_entities.UserRequest	true	"Registration data"
 //	@Success		201		{object}	common.APIResponse
 //	@Failure		400		{object}	common.APIResponse
 //	@Failure		409		{object}	common.APIResponse
 //	@Router			/api/v1/register [post]
 func registerRoute(c *gin.Context) {
-	var request auth_entities.RegisterRequest
+	var request *users_entities.UserRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
 	}
 
-	user, err := auth_handler.Register(c.Request.Context(), &request)
+	user, err := auth_handler.Register(c.Request.Context(), request)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, users_service.ErrUserAlreadyExists) {
+		if errors.Is(err, users_service.ErrUserPasswordRequired) {
+			status = http.StatusBadRequest
+		} else if errors.Is(err, users_service.ErrUserAlreadyExists) {
 			status = http.StatusConflict
 		}
 		c.JSON(status, common.ErrorResponse(err))
@@ -63,13 +66,13 @@ func registerRoute(c *gin.Context) {
 //	@Failure		401		{object}	common.APIResponse
 //	@Router			/api/v1/login [post]
 func loginRoute(c *gin.Context) {
-	var request auth_entities.LoginRequest
+	var request *auth_entities.LoginRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
 	}
 
-	user, tokens, err := auth_handler.Login(c.Request.Context(), &request)
+	user, tokens, err := auth_handler.Login(c.Request.Context(), request)
 	if err != nil {
 		if errors.Is(err, auth_service.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, common.ErrorResponse(err))

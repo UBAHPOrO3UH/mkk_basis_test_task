@@ -11,7 +11,7 @@ import (
 func CreateTask(
 	ctx context.Context,
 	userID uint64,
-	request *tasks_entities.CreateTaskRequest,
+	request *tasks_entities.TaskRequest,
 ) (*tasks_entities.TaskResponse, error) {
 	return deps.Container.Core.Services.TasksService.CreateTask(ctx, userID, request)
 }
@@ -24,10 +24,14 @@ func GetTasks(
 	return deps.Container.Core.Services.TasksService.GetTasks(ctx, userID, params)
 }
 
+func GetTasksWithAssigneeOutsideTeam(ctx context.Context) ([]*tasks_entities.TaskResponse, error) {
+	return deps.Container.Core.Services.TasksService.GetTasksWithAssigneeOutsideTeam(ctx)
+}
+
 func UpdateTask(
 	ctx context.Context,
 	taskID, userID uint64,
-	request *tasks_entities.UpdateTaskRequest,
+	request *tasks_entities.TaskRequest,
 ) (*tasks_entities.TaskResponse, error) {
 	return deps.Container.Core.Services.TasksService.UpdateTask(ctx, taskID, userID, request)
 }

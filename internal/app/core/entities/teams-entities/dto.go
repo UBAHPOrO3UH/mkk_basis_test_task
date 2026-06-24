@@ -27,3 +27,10 @@ type TeamMemberResponse struct {
 	Role     string    `json:"role"`
 	JoinedAt time.Time `json:"joined_at"`
 }
+
+type TeamStatsResponse struct {
+	ID                     uint64 `json:"id"`
+	Name                   string `json:"name"`
+	MemberCount            int64  `json:"member_count"`
+	DoneTasksLastSevenDays int64  `json:"done_tasks_last_seven_days"`
+}

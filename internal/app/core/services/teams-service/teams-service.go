@@ -26,6 +26,7 @@ var (
 type TeamService interface {
 	CreateTeam(ctx context.Context, ownerID uint64, request *teams_entities.CreateTeamRequest) (*teams_entities.TeamResponse, error)
 	GetUserTeams(ctx context.Context, userID uint64) ([]*teams_entities.TeamResponse, error)
+	GetTeamStats(ctx context.Context) ([]*teams_entities.TeamStatsResponse, error)
 	InviteUser(ctx context.Context, teamID, inviterID uint64, request *teams_entities.InviteUserRequest) (*teams_entities.TeamMemberResponse, error)
 }
 
@@ -113,6 +114,34 @@ func (s *TeamServiceImpl) GetUserTeams(
 	})
 	if err != nil {
 		teamsLogger.Errorf("failed to get teams user_id=%d: %v", userID, err)
+		return nil, err
+	}
+
+	return responses, nil
+}
+
+func (s *TeamServiceImpl) GetTeamStats(ctx context.Context) ([]*teams_entities.TeamStatsResponse, error) {
+	responses := make([]*teams_entities.TeamStatsResponse, 0)
+
+	err := s.tm.DBRun(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		models, err := s.teamRepository.FindAllWithStats(tx)
+		if err != nil {
+			return err
+		}
+
+		responses = make([]*teams_entities.TeamStatsResponse, 0, len(models))
+		for _, model := range models {
+			responses = append(responses, &teams_entities.TeamStatsResponse{
+				ID:                     model.ID,
+				Name:                   model.Name,
+				MemberCount:            model.MemberCount,
+				DoneTasksLastSevenDays: model.DoneTasksLastSevenDays,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		teamsLogger.Errorf("failed to get team stats: %v", err)
 		return nil, err
 	}
 

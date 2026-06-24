@@ -6,6 +6,7 @@ import (
 	users_filter "mkk_basis/rest_api/internal/app/core/entities/users-filter"
 	users_service "mkk_basis/rest_api/internal/app/core/services/users-service"
 	"mkk_basis/rest_api/internal/app/deps"
+	"time"
 )
 
 func GetUserById(
@@ -85,6 +86,13 @@ func GetUsersFilter(
 	)
 
 	return result, nil
+}
+
+func GetTopTaskCreatorsByTeamForMonth(
+	ctx context.Context,
+	month time.Time,
+) ([]*users_entities.TeamTopTaskCreatorResponse, error) {
+	return deps.Container.Core.Services.UsersService.GetTopTaskCreatorsByTeamForMonth(ctx, month)
 }
 
 func CreateUser(

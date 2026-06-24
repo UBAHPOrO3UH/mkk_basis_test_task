@@ -14,6 +14,7 @@ import (
 )
 
 var taskErrorStatuses = []rest_common.ErrorStatus{
+	{Error: tasks_service.ErrTaskTeamRequired, Status: http.StatusBadRequest},
 	{Error: tasks_service.ErrTaskTitleRequired, Status: http.StatusBadRequest},
 	{Error: tasks_service.ErrInvalidTaskStatus, Status: http.StatusBadRequest},
 	{Error: tasks_service.ErrNoTaskChanges, Status: http.StatusBadRequest},
@@ -29,6 +30,7 @@ func AddRoutes(r *gin.RouterGroup) {
 	{
 		router.POST("", createTaskRoute)
 		router.GET("", getTasksRoute)
+		router.GET("/integrity/invalid-assignees", getTasksWithInvalidAssigneesRoute)
 		router.PUT("/:id", updateTaskRoute)
 		router.GET("/:id/history", getTaskHistoryRoute)
 	}
@@ -41,7 +43,7 @@ func AddRoutes(r *gin.RouterGroup) {
 //	@Tags			tasks
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		tasks_entities.CreateTaskRequest	true	"Task data"
+//	@Param			request	body		tasks_entities.TaskRequest	true	"Task data"
 //	@Success		201		{object}	common.APIResponse{result=tasks_entities.TaskResponse}
 //	@Router			/api/v1/tasks [post]
 func createTaskRoute(c *gin.Context) {
@@ -50,7 +52,7 @@ func createTaskRoute(c *gin.Context) {
 		return
 	}
 
-	var request tasks_entities.CreateTaskRequest
+	var request tasks_entities.TaskRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
@@ -96,6 +98,24 @@ func getTasksRoute(c *gin.Context) {
 	c.JSON(http.StatusOK, common.ResultResponseNoErr(result.Tasks))
 }
 
+// Get tasks with invalid assignees
+//
+//	@Summary		Find tasks with invalid assignees
+//	@Description	Найти задачи, где назначенный пользователь не является участником команды задачи
+//	@Tags			tasks
+//	@Produce		json
+//	@Success		200	{object}	common.APIResponse{result=[]tasks_entities.TaskResponse}
+//	@Router			/api/v1/tasks/integrity/invalid-assignees [get]
+func getTasksWithInvalidAssigneesRoute(c *gin.Context) {
+	tasks, err := tasks_handler.GetTasksWithAssigneeOutsideTeam(c.Request.Context())
+	if err != nil {
+		rest_common.WriteError(c, err, taskErrorStatuses...)
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultResponseNoErr(tasks))
+}
+
 // Update task
 //
 //	@Summary		Update task
@@ -103,8 +123,8 @@ func getTasksRoute(c *gin.Context) {
 //	@Tags			tasks
 //	@Accept			json
 //	@Produce		json
-//	@Param			id		path		int									true	"Task ID"
-//	@Param			request	body		tasks_entities.UpdateTaskRequest	true	"Task data"
+//	@Param			id		path		int							true	"Task ID"
+//	@Param			request	body		tasks_entities.TaskRequest	true	"Task data"
 //	@Success		200		{object}	common.APIResponse{result=tasks_entities.TaskResponse}
 //	@Router			/api/v1/tasks/{id} [put]
 func updateTaskRoute(c *gin.Context) {
@@ -118,7 +138,7 @@ func updateTaskRoute(c *gin.Context) {
 		return
 	}
 
-	var request tasks_entities.UpdateTaskRequest
+	var request tasks_entities.TaskRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return

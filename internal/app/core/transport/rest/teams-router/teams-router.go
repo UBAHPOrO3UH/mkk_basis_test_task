@@ -29,6 +29,7 @@ func AddRoutes(r *gin.RouterGroup) {
 	{
 		router.POST("", createTeamRoute)
 		router.GET("", getTeamsRoute)
+		router.GET("/stats", getTeamStatsRoute)
 		router.POST("/:id/invite", inviteUserRoute)
 	}
 }
@@ -85,6 +86,24 @@ func getTeamsRoute(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, common.ResultResponseNoErr(teams))
+}
+
+// Get team stats
+//
+//	@Summary		Get team stats
+//	@Description	Получить для каждой команды количество участников и выполненных за последние 7 дней задач
+//	@Tags			teams
+//	@Produce		json
+//	@Success		200	{object}	common.APIResponse{result=[]teams_entities.TeamStatsResponse}
+//	@Router			/api/v1/teams/stats [get]
+func getTeamStatsRoute(c *gin.Context) {
+	stats, err := teams_handler.GetTeamStats(c.Request.Context())
+	if err != nil {
+		rest_common.WriteError(c, err, teamErrorStatuses...)
+		return
+	}
+
+	c.JSON(http.StatusOK, common.ResultResponseNoErr(stats))
 }
 
 // Invite user
