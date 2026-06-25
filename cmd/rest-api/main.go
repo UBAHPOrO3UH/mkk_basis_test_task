@@ -34,7 +34,11 @@ func Run(ctx context.Context, errSet *components.ErrSet) error {
 	}
 
 	<-ctx.Done()
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	shutdownTimeout := config.CurrentConfig.Server.ShutdownTimeoutSeconds
+	if shutdownTimeout <= 0 {
+		shutdownTimeout = 30
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeout)*time.Second)
 	defer cancel()
 	lifespan.OnStop(shutdownCtx)
 

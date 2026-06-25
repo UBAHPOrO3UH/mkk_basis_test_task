@@ -1,0 +1,54 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  http_protocol: "http"
+  shutdown_timeout_seconds: 30
+
+app_info:
+  max_process: 4
+  use_profiler: false
+  test_mode: false
+
+database:
+  db_host: "localhost"
+  db_user: "app"
+  db_password: "change-me"
+  db_name: "mkk_basis_tasks"
+  db_port: "3306"
+  max_connections: 16
+  max_idle_conns: 8
+  conn_max_lifetime_minutes: 30
+  conn_max_idle_time_minutes: 5
+
+redis:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 0
+  dial_timeout_seconds: 5
+  read_timeout_seconds: 3
+  write_timeout_seconds: 3
+
+auth:
+  jwt_secret: "replace-with-at-least-32-characters"
+  jwt_issuer: "mkk-basis-rest-api"
+  access_token_ttl_minutes: 15
+  refresh_token_ttl_hours: 168
+  cookie_secure: false
+  cookie_domain: ""
+
+rate_limit:
+  enabled: true
+  requests_per_minute: 100
+
+metrics:
+  enabled: true
+  path: "/metrics"
+
+email:
+  enabled: true
+  mock_failure: false
+  mock_latency_ms: 0
+  circuit_breaker:
+    failure_threshold: 3
+    open_timeout_seconds: 30

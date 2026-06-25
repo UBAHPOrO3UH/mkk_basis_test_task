@@ -9,6 +9,7 @@ import (
 	"mkk_basis/rest_api/internal/app/core/repositorys/teams"
 	"mkk_basis/rest_api/internal/app/core/repositorys/users"
 	database_service "mkk_basis/rest_api/internal/app/infrastructure/database-service"
+	email_service "mkk_basis/rest_api/internal/app/infrastructure/email-service"
 	"strings"
 
 	"gorm.io/gorm"
@@ -21,6 +22,7 @@ var (
 	ErrInvalidTeamRole        = errors.New("invalid team role")
 	ErrInsufficientPermission = errors.New("insufficient permission")
 	ErrUserAlreadyTeamMember  = errors.New("user is already a team member")
+	ErrInvitationEmailFailed  = errors.New("invitation email failed")
 )
 
 type TeamService interface {
@@ -35,6 +37,7 @@ type TeamServiceImpl struct {
 	teamRepository       teams.TeamRepository
 	teamMemberRepository team_members.TeamMemberRepository
 	userRepository       users.UserRepository
+	emailService         email_service.EmailService
 }
 
 func NewTeamService(
@@ -43,11 +46,32 @@ func NewTeamService(
 	teamMemberRepository team_members.TeamMemberRepository,
 	userRepository users.UserRepository,
 ) TeamService {
+	return NewTeamServiceWithEmail(
+		tm,
+		teamRepository,
+		teamMemberRepository,
+		userRepository,
+		email_service.NewNoopEmailService(),
+	)
+}
+
+func NewTeamServiceWithEmail(
+	tm database_service.TransactionManager,
+	teamRepository teams.TeamRepository,
+	teamMemberRepository team_members.TeamMemberRepository,
+	userRepository users.UserRepository,
+	emailService email_service.EmailService,
+) TeamService {
+	if emailService == nil {
+		emailService = email_service.NewNoopEmailService()
+	}
+
 	return &TeamServiceImpl{
 		tm:                   tm,
 		teamRepository:       teamRepository,
 		teamMemberRepository: teamMemberRepository,
 		userRepository:       userRepository,
+		emailService:         emailService,
 	}
 }
 
@@ -197,6 +221,15 @@ func (s *TeamServiceImpl) InviteUser(
 		}
 		if existingMember != nil {
 			return ErrUserAlreadyTeamMember
+		}
+
+		if err = s.emailService.SendInvitation(ctx, email_service.InvitationEmail{
+			TeamID:    teamID,
+			UserID:    user.ID,
+			Username:  user.Username,
+			InviterID: inviterID,
+		}); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvitationEmailFailed, err)
 		}
 
 		createdMember, err = s.teamMemberRepository.Create(&team_members.TeamMemberModel{

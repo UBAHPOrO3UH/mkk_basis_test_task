@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	"mkk_basis/rest_api/internal/app/core/entities/users-filter"
+	users_filter "mkk_basis/rest_api/internal/app/core/entities/users-filter"
 	"mkk_basis/rest_api/internal/app/core/repositorys/users"
 	"time"
 

@@ -6,9 +6,9 @@ package mocks
 
 import (
 	"context"
-	"mkk_basis/rest_api/internal/app/core/entities/auth-entities"
-	"mkk_basis/rest_api/internal/app/core/entities/users-entities"
-	"mkk_basis/rest_api/internal/app/core/services/auth-service"
+	auth_entities "mkk_basis/rest_api/internal/app/core/entities/auth-entities"
+	users_entities "mkk_basis/rest_api/internal/app/core/entities/users-entities"
+	auth_service "mkk_basis/rest_api/internal/app/core/services/auth-service"
 
 	mock "github.com/stretchr/testify/mock"
 )

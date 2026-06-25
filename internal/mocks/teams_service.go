@@ -6,7 +6,7 @@ package mocks
 
 import (
 	"context"
-	"mkk_basis/rest_api/internal/app/core/entities/teams-entities"
+	teams_entities "mkk_basis/rest_api/internal/app/core/entities/teams-entities"
 
 	mock "github.com/stretchr/testify/mock"
 )

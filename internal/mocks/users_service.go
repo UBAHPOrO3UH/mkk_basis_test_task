@@ -6,9 +6,9 @@ package mocks
 
 import (
 	"context"
-	"mkk_basis/rest_api/internal/app/core/entities/users-entities"
-	"mkk_basis/rest_api/internal/app/core/entities/users-filter"
-	"mkk_basis/rest_api/internal/app/core/services/users-service"
+	users_entities "mkk_basis/rest_api/internal/app/core/entities/users-entities"
+	users_filter "mkk_basis/rest_api/internal/app/core/entities/users-filter"
+	users_service "mkk_basis/rest_api/internal/app/core/services/users-service"
 	"time"
 
 	mock "github.com/stretchr/testify/mock"

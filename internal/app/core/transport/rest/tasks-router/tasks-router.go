@@ -26,7 +26,7 @@ var taskErrorStatuses = []rest_common.ErrorStatus{
 
 func AddRoutes(r *gin.RouterGroup) {
 	router := r.Group("/tasks")
-	router.Use(auth_middleware.AuthMiddleware())
+	router.Use(auth_middleware.AuthMiddleware(), auth_middleware.RateLimitMiddleware())
 	{
 		router.POST("", createTaskRoute)
 		router.GET("", getTasksRoute)

@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	"mkk_basis/rest_api/internal/app/core/repositorys/team-members"
+	team_members "mkk_basis/rest_api/internal/app/core/repositorys/team-members"
 
 	mock "github.com/stretchr/testify/mock"
 	"gorm.io/gorm"

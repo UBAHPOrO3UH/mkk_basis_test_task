@@ -16,7 +16,7 @@ import (
 
 func AddRoutes(r *gin.RouterGroup) {
 	router := r.Group("/users")
-	router.Use(auth_middleware.AuthMiddleware())
+	router.Use(auth_middleware.AuthMiddleware(), auth_middleware.RateLimitMiddleware())
 	{
 		router.POST("", createUserRoute)
 		router.GET("", getUsersRoute)

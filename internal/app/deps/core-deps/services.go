@@ -24,11 +24,12 @@ func NewServicesDependencies(infrastructureDeps *infrastructure_deps.Infrastruct
 	authService := auth_service.NewAuthService(
 		infrastructureDeps.TransactionManager, repoDeps.UsersRepository, usersService, tokenService,
 	)
-	teamsService := teams_service.NewTeamService(
+	teamsService := teams_service.NewTeamServiceWithEmail(
 		infrastructureDeps.TransactionManager,
 		repoDeps.TeamsRepository,
 		repoDeps.TeamMembersRepository,
 		repoDeps.UsersRepository,
+		infrastructureDeps.EmailService,
 	)
 	cacheService := cache_service.NewCacheService(infrastructureDeps.RedisClient)
 	tasksService := tasks_service.NewTaskService(

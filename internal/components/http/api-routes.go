@@ -6,6 +6,8 @@ import (
 	tasks_router "mkk_basis/rest_api/internal/app/core/transport/rest/tasks-router"
 	teams_router "mkk_basis/rest_api/internal/app/core/transport/rest/teams-router"
 	users_router "mkk_basis/rest_api/internal/app/core/transport/rest/users-router"
+	middlewares "mkk_basis/rest_api/internal/components/http/middlewares"
+	"mkk_basis/rest_api/internal/config"
 	"net/http"
 	"time"
 
@@ -36,6 +38,7 @@ func GetRoutes() *gin.Engine {
 		ginzap.Ginzap(serverLogger, time.RFC3339, true)(c)
 	})
 	router.Use(ginzap.RecoveryWithZap(serverLogger, true))
+	router.Use(middlewares.MetricsMiddleware())
 	router.Use(cors.New(cors.Config{
 		AllowOriginFunc: func(origin string) bool {
 			return true
@@ -58,6 +61,11 @@ func GetRoutes() *gin.Engine {
 
 	// API routes
 	AddApiRoutes(router)
+	metricsPath := "/metrics"
+	if config.CurrentConfig.Metrics != nil && config.CurrentConfig.Metrics.Path != "" {
+		metricsPath = config.CurrentConfig.Metrics.Path
+	}
+	router.GET(metricsPath, middlewares.MetricsHandler())
 	router.Group("swagger").
 		GET("/*any", func(c *gin.Context) {
 			docs.SwaggerInfo.Host = c.Request.Host

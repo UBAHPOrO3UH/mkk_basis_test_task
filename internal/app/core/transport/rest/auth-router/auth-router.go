@@ -15,6 +15,7 @@ import (
 )
 
 func AddRoutes(router *gin.RouterGroup) {
+	router.Use(auth_middleware.RateLimitMiddleware())
 	router.POST("/register", registerRoute)
 	router.POST("/login", loginRoute)
 }

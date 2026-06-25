@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	"mkk_basis/rest_api/internal/app/core/repositorys/task-history"
+	task_history "mkk_basis/rest_api/internal/app/core/repositorys/task-history"
 
 	mock "github.com/stretchr/testify/mock"
 	"gorm.io/gorm"

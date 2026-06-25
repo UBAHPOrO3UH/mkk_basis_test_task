@@ -28,61 +28,88 @@ func (e *EmptyError) Error() string {
 }
 
 type AppConfig struct {
-	Server   *ServerConfig
-	AppInfo  *AppInfoConfig
-	Database *DataBaseConfig
-	Redis    *RedisConfig
-	Auth     *AuthConfig
+	Server    *ServerConfig    `mapstructure:"server" yaml:"server"`
+	AppInfo   *AppInfoConfig   `mapstructure:"app_info" yaml:"app_info"`
+	Database  *DataBaseConfig  `mapstructure:"database" yaml:"database"`
+	Redis     *RedisConfig     `mapstructure:"redis" yaml:"redis"`
+	Auth      *AuthConfig      `mapstructure:"auth" yaml:"auth"`
+	RateLimit *RateLimitConfig `mapstructure:"rate_limit" yaml:"rate_limit"`
+	Metrics   *MetricsConfig   `mapstructure:"metrics" yaml:"metrics"`
+	Email     *EmailConfig     `mapstructure:"email" yaml:"email"`
 }
 
 type AppInfoConfig struct {
-	MaxProcess  int  `env:"APP_MAX_PROCESS"`
-	UseProfiler bool `env:"APP_USE_PROFILER"`
-	TestMode    bool `env:"APP_TEST_MODE"`
+	MaxProcess  int  `env:"APP_MAX_PROCESS"  mapstructure:"max_process"  yaml:"max_process"`
+	UseProfiler bool `env:"APP_USE_PROFILER" mapstructure:"use_profiler" yaml:"use_profiler"`
+	TestMode    bool `env:"APP_TEST_MODE"     mapstructure:"test_mode"    yaml:"test_mode"`
 }
 
 type ServerConfig struct {
-	Port         int    `env:"SERVER_PORT"               json:"port"               binding:"required"`
-	Host         string `env:"SERVER_HOST"               json:"host"               binding:"required"`
-	HttpProtocol string `env:"SERVER_HTTP_PROTOCOL"      json:"http_protocol"      binding:"required"`
+	Port                   int    `env:"SERVER_PORT"                     json:"port"                     mapstructure:"port"                     yaml:"port"                     binding:"required"`
+	Host                   string `env:"SERVER_HOST"                     json:"host"                     mapstructure:"host"                     yaml:"host"                     binding:"required"`
+	HttpProtocol           string `env:"SERVER_HTTP_PROTOCOL"            json:"http_protocol"            mapstructure:"http_protocol"            yaml:"http_protocol"            binding:"required"`
+	ShutdownTimeoutSeconds int    `env:"SERVER_SHUTDOWN_TIMEOUT_SECONDS" json:"shutdown_timeout_seconds" mapstructure:"shutdown_timeout_seconds" yaml:"shutdown_timeout_seconds"`
 }
 
 type DataBaseConfig struct {
-	DbHost                 string `env:"DB_HOST"                      json:"db_host"     binding:"required"`
-	DbUser                 string `env:"DB_USER"                      json:"db_user"     binding:"required"`
-	DbPassword             string `env:"DB_PASSWORD"                  json:"db_password" binding:"required"`
-	DbName                 string `env:"DB_NAME"                      json:"db_name"     binding:"required"`
-	DbPort                 string `env:"DB_PORT"                      json:"db_port"     binding:"required"`
-	MaxConnections         int    `env:"DB_MAX_CONN"               json:"-"` // exclude from json
-	MaxIdleConns           int    `env:"DB_MAX_IDLE_CONNS"     json:"-"`
-	ConnMaxLifetimeMinutes int    `env:"DB_CONN_MAX_LIFETIME_MINUTES"  json:"-"`
-	ConnMaxIdleTimeMinutes int    `env:"DB_CONN_MAX_IDLE_TIME_MINUTES" json:"-"`
+	DbHost                 string `env:"DB_HOST"                       json:"db_host"     mapstructure:"db_host"                    yaml:"db_host"     binding:"required"`
+	DbUser                 string `env:"DB_USER"                       json:"db_user"     mapstructure:"db_user"                    yaml:"db_user"     binding:"required"`
+	DbPassword             string `env:"DB_PASSWORD"                   json:"db_password" mapstructure:"db_password"                yaml:"db_password" binding:"required"`
+	DbName                 string `env:"DB_NAME"                       json:"db_name"     mapstructure:"db_name"                    yaml:"db_name"     binding:"required"`
+	DbPort                 string `env:"DB_PORT"                       json:"db_port"     mapstructure:"db_port"                    yaml:"db_port"     binding:"required"`
+	MaxConnections         int    `env:"DB_MAX_CONN"                   json:"-"           mapstructure:"max_connections"            yaml:"max_connections"`
+	MaxIdleConns           int    `env:"DB_MAX_IDLE_CONNS"             json:"-"           mapstructure:"max_idle_conns"             yaml:"max_idle_conns"`
+	ConnMaxLifetimeMinutes int    `env:"DB_CONN_MAX_LIFETIME_MINUTES"  json:"-"           mapstructure:"conn_max_lifetime_minutes"  yaml:"conn_max_lifetime_minutes"`
+	ConnMaxIdleTimeMinutes int    `env:"DB_CONN_MAX_IDLE_TIME_MINUTES" json:"-"           mapstructure:"conn_max_idle_time_minutes" yaml:"conn_max_idle_time_minutes"`
 }
 
 type RedisConfig struct {
-	Host                string `env:"REDIS_HOST"                  json:"host"`
-	Port                string `env:"REDIS_PORT"                  json:"port"`
-	Password            string `env:"REDIS_PASSWORD"              json:"-"`
-	DB                  int    `env:"REDIS_DB"                    json:"db"`
-	DialTimeoutSeconds  int    `env:"REDIS_DIAL_TIMEOUT_SECONDS"  json:"dial_timeout_seconds"`
-	ReadTimeoutSeconds  int    `env:"REDIS_READ_TIMEOUT_SECONDS"  json:"read_timeout_seconds"`
-	WriteTimeoutSeconds int    `env:"REDIS_WRITE_TIMEOUT_SECONDS" json:"write_timeout_seconds"`
+	Host                string `env:"REDIS_HOST"                  json:"host"                  mapstructure:"host"                  yaml:"host"`
+	Port                string `env:"REDIS_PORT"                  json:"port"                  mapstructure:"port"                  yaml:"port"`
+	Password            string `env:"REDIS_PASSWORD"              json:"-"                     mapstructure:"password"              yaml:"password"`
+	DB                  int    `env:"REDIS_DB"                    json:"db"                    mapstructure:"db"                    yaml:"db"`
+	DialTimeoutSeconds  int    `env:"REDIS_DIAL_TIMEOUT_SECONDS"  json:"dial_timeout_seconds"  mapstructure:"dial_timeout_seconds"  yaml:"dial_timeout_seconds"`
+	ReadTimeoutSeconds  int    `env:"REDIS_READ_TIMEOUT_SECONDS"  json:"read_timeout_seconds"  mapstructure:"read_timeout_seconds"  yaml:"read_timeout_seconds"`
+	WriteTimeoutSeconds int    `env:"REDIS_WRITE_TIMEOUT_SECONDS" json:"write_timeout_seconds" mapstructure:"write_timeout_seconds" yaml:"write_timeout_seconds"`
 }
 
 type AuthConfig struct {
-	JWTSecret             string `env:"JWT_SECRET"               json:"-"`
-	JWTIssuer             string `env:"JWT_ISSUER"               json:"jwt_issuer"`
-	AccessTokenTTLMinutes int    `env:"ACCESS_TOKEN_TTL_MINUTES" json:"access_token_ttl_minutes"`
-	RefreshTokenTTLHours  int    `env:"REFRESH_TOKEN_TTL_HOURS"  json:"refresh_token_ttl_hours"`
-	CookieSecure          bool   `env:"AUTH_COOKIE_SECURE"       json:"cookie_secure"`
-	CookieDomain          string `env:"AUTH_COOKIE_DOMAIN"       json:"cookie_domain"`
+	JWTSecret             string `env:"JWT_SECRET"               json:"-"                        mapstructure:"jwt_secret"               yaml:"jwt_secret"`
+	JWTIssuer             string `env:"JWT_ISSUER"               json:"jwt_issuer"               mapstructure:"jwt_issuer"               yaml:"jwt_issuer"`
+	AccessTokenTTLMinutes int    `env:"ACCESS_TOKEN_TTL_MINUTES" json:"access_token_ttl_minutes" mapstructure:"access_token_ttl_minutes" yaml:"access_token_ttl_minutes"`
+	RefreshTokenTTLHours  int    `env:"REFRESH_TOKEN_TTL_HOURS"  json:"refresh_token_ttl_hours"  mapstructure:"refresh_token_ttl_hours"  yaml:"refresh_token_ttl_hours"`
+	CookieSecure          bool   `env:"AUTH_COOKIE_SECURE"       json:"cookie_secure"            mapstructure:"cookie_secure"           yaml:"cookie_secure"`
+	CookieDomain          string `env:"AUTH_COOKIE_DOMAIN"       json:"cookie_domain"            mapstructure:"cookie_domain"           yaml:"cookie_domain"`
+}
+
+type RateLimitConfig struct {
+	Enabled           bool `env:"RATE_LIMIT_ENABLED"             mapstructure:"enabled"             yaml:"enabled"`
+	RequestsPerMinute int  `env:"RATE_LIMIT_REQUESTS_PER_MINUTE" mapstructure:"requests_per_minute" yaml:"requests_per_minute"`
+}
+
+type MetricsConfig struct {
+	Enabled bool   `env:"METRICS_ENABLED" mapstructure:"enabled" yaml:"enabled"`
+	Path    string `env:"METRICS_PATH"    mapstructure:"path"    yaml:"path"`
+}
+
+type EmailConfig struct {
+	Enabled        bool                  `env:"EMAIL_ENABLED"         mapstructure:"enabled"         yaml:"enabled"`
+	MockFailure    bool                  `env:"EMAIL_MOCK_FAILURE"    mapstructure:"mock_failure"    yaml:"mock_failure"`
+	MockLatencyMS  int                   `env:"EMAIL_MOCK_LATENCY_MS" mapstructure:"mock_latency_ms" yaml:"mock_latency_ms"`
+	CircuitBreaker *CircuitBreakerConfig `mapstructure:"circuit_breaker" yaml:"circuit_breaker"`
+}
+
+type CircuitBreakerConfig struct {
+	FailureThreshold   int `env:"EMAIL_CB_FAILURE_THRESHOLD"    mapstructure:"failure_threshold"    yaml:"failure_threshold"`
+	OpenTimeoutSeconds int `env:"EMAIL_CB_OPEN_TIMEOUT_SECONDS" mapstructure:"open_timeout_seconds" yaml:"open_timeout_seconds"`
 }
 
 var CurrentConfig = &AppConfig{
 	Server: &ServerConfig{
-		HttpProtocol: "http",
-		Host:         "0.0.0.0",
-		Port:         8080,
+		HttpProtocol:           "http",
+		Host:                   "0.0.0.0",
+		Port:                   8080,
+		ShutdownTimeoutSeconds: 30,
 	},
 	AppInfo: &AppInfoConfig{
 		MaxProcess:  4,
@@ -114,6 +141,23 @@ var CurrentConfig = &AppConfig{
 		AccessTokenTTLMinutes: 15,
 		RefreshTokenTTLHours:  24 * 7,
 		CookieSecure:          false,
+	},
+	RateLimit: &RateLimitConfig{
+		Enabled:           true,
+		RequestsPerMinute: 100,
+	},
+	Metrics: &MetricsConfig{
+		Enabled: true,
+		Path:    "/metrics",
+	},
+	Email: &EmailConfig{
+		Enabled:       true,
+		MockFailure:   false,
+		MockLatencyMS: 0,
+		CircuitBreaker: &CircuitBreakerConfig{
+			FailureThreshold:   3,
+			OpenTimeoutSeconds: 30,
+		},
 	},
 }
 
@@ -201,5 +245,6 @@ func MustApplyEnv() {
 func init() {
 	viper.AddConfigPath(configPath)
 	viper.SetConfigName(configName)
+	viper.SetConfigType("yaml")
 	ReloadConfig()
 }

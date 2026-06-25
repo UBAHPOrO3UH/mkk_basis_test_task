@@ -21,11 +21,12 @@ var teamErrorStatuses = []rest_common.ErrorStatus{
 	{Error: teams_service.ErrTeamNotFound, Status: http.StatusNotFound},
 	{Error: teams_service.ErrUserNotFound, Status: http.StatusNotFound},
 	{Error: teams_service.ErrUserAlreadyTeamMember, Status: http.StatusConflict},
+	{Error: teams_service.ErrInvitationEmailFailed, Status: http.StatusServiceUnavailable},
 }
 
 func AddRoutes(r *gin.RouterGroup) {
 	router := r.Group("/teams")
-	router.Use(auth_middleware.AuthMiddleware())
+	router.Use(auth_middleware.AuthMiddleware(), auth_middleware.RateLimitMiddleware())
 	{
 		router.POST("", createTeamRoute)
 		router.GET("", getTeamsRoute)
